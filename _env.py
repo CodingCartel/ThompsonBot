@@ -2,7 +2,7 @@ import os
 
 
 def load():
-    print(os.listdir(os.curdir))
+    # print(os.listdir(os.curdir))
     # os.chdir('src')
     with open('.env') as f:
         lines = f.readlines()
