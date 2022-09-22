@@ -1,3 +1,6 @@
+import os
+import _env
+
 import discord
 import time
 
@@ -8,7 +11,7 @@ class Bot(discord.Client):
 
         self.sandbox = 1022496382625517649
         super().__init__(intents=intents)
-        self._token = 'MTAyMjQ3NzEyMDcyOTAwNjE0MA.Gif4J8.P8y5hqXSWHBNuMQqdzT8IV8A33FvhAMzD9LpwY'
+        self._token = os.environ.get('TOKEN')
         self.run()
 
     def run(self, *args):
