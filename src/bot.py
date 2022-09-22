@@ -19,6 +19,7 @@ class Bot(discord.Client):
     async def on_message(self, message: discord.Message):
         if message.author.id == self.user.id:
             return
+        log.log(f"Received '{message.content}' from user '{message.author.name}'.")
         await message.reply('Success!')
 
     async def on_ready(self, *args):
