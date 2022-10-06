@@ -1,4 +1,6 @@
 import asyncio
+import json
+import os.path
 import sys
 import time
 
@@ -13,6 +15,10 @@ log = logger.Logger('BOT')
 REQUEST_DELAY = 10  # 5 * 60
 CMD_PREFIX = "!"
 INVALID_CMD_MSG = f"Invalid command. Enter '{CMD_PREFIX}help' for more info."
+
+
+def id_and_name(discord_user: discord.User):
+    return f"{discord_user.name}#{discord_user.discriminator}"
 
 
 class Command:
@@ -75,7 +81,47 @@ class SetNewsChannel(Command):
 
     @classmethod
     async def run(cls, bot, req_msg: discord.Message, *args: str):
-        pass
+        log.log(f"User {id_and_name(req_msg.author)} sent command '{req_msg.content}'.", level=logger.LOG_INFO)
+        if len(args) < 1:
+            await req_msg.reply(f"{CMD_PREFIX}news_channel requires a channel mention as first argument.", mention_author=False)
+            log.log("Not enough arguments to 'news_channel' command.", level=logger.LOG_WARN)
+            return
+        if not args[0].startswith('<#'):
+            await req_msg.reply(f"{CMD_PREFIX}news_channel requires a channel mention as first argument.", mention_author=False)
+            log.log("Invalid argument passed to 'news_channel' command.", level=logger.LOG_WARN)
+            return
+
+        log.log(f"Setting channel 'news' to be {args[0]} ...", level=logger.LOG_INFO)
+        ch_id_s = args[0].removeprefix('<#').removesuffix('>')
+        ch_id = int(ch_id_s)
+        bot.add_channel(ch_id, 'news')
+        log.log("Channel has correctly been configured.")
+        await req_msg.reply(f"News will now be sent to {args[0]}.", mention_author=False)
+
+
+class ToggleTracking(Command):
+    name = 'tracking'
+    description = f"""
+    {CMD_PREFIX}tracking [on|off]
+    Toggle news tracking from instagram on or off. With no arguments, request the tracking status.
+"""
+
+    @classmethod
+    async def run(cls, bot, req_msg: discord.Message, *args: str):
+        log.log(f"User {id_and_name(req_msg.author)} sent command '{req_msg.content}'.", level=logger.LOG_INFO)
+        if len(args) < 1:
+            trck = 'on' if bot.tracking else 'off'
+            await req_msg.reply(f"Tracking is currently {trck}.", mention_author=False)
+            log.log(f"User {id_and_name(req_msg.author)} requested tracking status", level=logger.LOG_INFO)
+            return
+        if args[0] not in ('on', 'off', 'ON', 'OFF'):
+            await req_msg.reply(f"{CMD_PREFIX}tracking requires 'on' or 'off' as first argument.", mention_author=False)
+            log.log("Invalid first argument for 'tracking' command.", level=logger.LOG_WARN)
+            return
+
+        bot.tracking = args[0].lower() == 'on'
+        bot.save_config()
+        await req_msg.reply(f"Tracking is now {args[0]}.", mention_author=False)
 
 
 class Bot(discord.Client):
@@ -90,9 +136,8 @@ class Bot(discord.Client):
         i.message_content = True
         super().__init__(intents=i)
 
-        self.channels = {}
+        self.load_config()
         self.last_post = None
-        self.tracking = False
         self.ready = False
         # self.start_tracking()
 
@@ -101,6 +146,7 @@ class Bot(discord.Client):
         Add the given channel to registry.
         """
         self.channels[name] = id_
+        self.save_config()
 
     def start_tracking(self):
         while not self.ready:
@@ -124,7 +170,7 @@ class Bot(discord.Client):
                 continue
             self.last_post = post
             try:
-                await self.channels['announcements'].send(post.get())
+                await self.channels['news'].send(post.get())
             except:
                 self.tracking = False
                 print("Exception caught while tracking instagram posts:", file=sys.stderr)
@@ -137,8 +183,8 @@ class Bot(discord.Client):
         """
         if message.author.id == self.user.id:
             return
-        log.log(f"Received '{message.content}' from user '{message.author.name}', channel n°{message.channel.id}.")
-        log.log("channel:", self.channels)
+        log.log(f"Received '{message.content}' from user '{id_and_name(message.author)}', channel n°{message.channel.id}.")
+        # log.log("channel:", self.channels)
         if ('commands' in self.channels) and (message.channel.id != self.channels['commands']):
             return
         args = message.content.split(' ')
@@ -161,4 +207,26 @@ class Bot(discord.Client):
         """
         log.log("Ready!", level=logger.LOG_INFO)
         self.ready = True
+
+    def save_config(self):
+        config = {
+            'channels': self.channels,
+            'tracking': self.tracking,
+        }
+        with open('config.json', 'w+') as f:
+            json.dump(config, f)
+
+        log.log(f"Successfully saved config to '{os.path.realpath('config.json')}'.")
+
+    def load_config(self):
+        if not os.path.exists('config.json'):
+            with open('config.json', 'x+') as f:
+                json.dump({'channels': {}, 'tracking': False}, f)
+            self.channels = {}
+            self.tracking = False
+            return
+        with open('config.json', 'r+') as f:
+            config = json.load(f)
+        self.channels = config['channels']
+        self.tracking = config['tracking']
 
