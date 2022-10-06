@@ -5,7 +5,12 @@ def load():
     # print(os.listdir(os.curdir))
     # os.chdir('src')
     print(os.path.realpath(os.curdir))
-    with open('../.env') as f:
+    if os.path.realpath('.').endswith('src'):
+        path = '../.env'
+    else:
+        path = '.env'
+
+    with open(path) as f:
         lines = f.readlines()
 
     for ln in lines:
