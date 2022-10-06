@@ -1,8 +1,8 @@
 import os
-import _env
+import src._env as _env
 
 import discord
-from bot import Bot
+from src.bot import Bot
 
 
 bot = Bot()
