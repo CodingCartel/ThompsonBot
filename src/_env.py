@@ -1,16 +1,8 @@
 import os
 
-
 def load():
-    # print(os.listdir(os.curdir))
-    # os.chdir('src')
     print(os.path.realpath(os.curdir))
-    if os.path.realpath('.').endswith('src'):
-        path = '../.env'
-    else:
-        path = '.env'
-
-    with open(path) as f:
+    with open('.env') as f:
         lines = f.readlines()
 
     for ln in lines:
@@ -22,7 +14,4 @@ def load():
 
         os.environ.setdefault(sep[0], eval(sep[1]))
 
-
 load()
-
-

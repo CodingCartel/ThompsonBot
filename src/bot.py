@@ -5,8 +5,8 @@ import sys
 import time
 
 import discord
-import logger
-import insta
+import src.logger as logger
+import src.insta as insta
 
 
 log = logger.Logger('BOT')

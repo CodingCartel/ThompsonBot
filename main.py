@@ -1,12 +1,7 @@
 import os
-import sys
-
-sys.path.append(os.path.realpath('./'))
-print(sys.path)
-import _env
-
 import discord
-from bot import Bot
+import src._env
+from src.bot import Bot
 
 
 bot = Bot()
