@@ -1,4 +1,3 @@
 discord.py
-facebook.py
 instagrapi
-python-twitter
+bs4
