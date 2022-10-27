@@ -21,6 +21,19 @@ def id_and_name(discord_user: discord.User):
     return f"{discord_user.name}#{discord_user.discriminator}"
 
 
+class Image:
+    def __init__(self, bot, url):
+        self.url = url
+        self.bot = bot
+
+    async def post(self, channel):
+        if channel not in self.bot.channels:
+            raise ValueError(f"Unknown channel {channel}. See src/config.json for more info.") from None
+        channel_id = self.bot.channels[channel]
+        channel_obj: discord.TextChannel = self.bot.get_channel(channel_id)
+        return await channel_obj.send(self.url)
+
+
 class Command:
     name = 'help'
     description = """
@@ -165,12 +178,15 @@ class Bot(discord.Client):
                 time.sleep(2.5 * 60)
 
             post = insta.get_last_post()
+            contents, img_url = post.get()
+            image = Image(self, img_url)
 
             if post == self.last_post:
                 continue
             self.last_post = post
             try:
-                await self.channels['news'].send(post.get())
+                await image.post('news')
+                await self.channels['news'].send(contents)
             except:
                 self.tracking = False
                 print("Exception caught while tracking instagram posts:", file=sys.stderr)
